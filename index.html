@@ -1,0 +1,62 @@
+<!DOCTYPE html><html lang='ko'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>ExamGuard 데모</title><style>
+body{margin:0;background:#0f172a;color:#e2e8f0;font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh}
+h1{font-size:20px;margin:16px 0 4px}#cap{font-size:15px;color:#facc15;height:22px;margin-bottom:10px}
+.wrap{display:flex;gap:28px;flex-wrap:wrap;justify-content:center;align-items:center}
+#room{background:#1e293b;border-radius:14px}
+.phone{width:300px;height:620px;background:#000;border-radius:44px;padding:12px;box-shadow:0 0 0 3px #334155,0 20px 50px #0008}
+.scr{width:100%;height:100%;background:#f8fafc;border-radius:34px;overflow:hidden;color:#0f172a;display:flex;flex-direction:column}
+.notch{height:26px;display:flex;justify-content:center}.notch div{width:90px;height:20px;background:#000;border-radius:0 0 12px 12px}
+.hd{padding:4px 14px;display:flex;justify-content:space-between;align-items:center}.hd b{font-size:16px}.pill{font-size:11px;padding:3px 8px;border-radius:10px;background:#e2e8f0}
+#ban{margin:6px 12px;padding:10px;border-radius:12px;color:#fff;font-weight:700;font-size:14px;text-align:center;background:#16a34a;transition:.3s}
+.card{margin:4px 12px;background:#fff;border-radius:12px;padding:8px;box-shadow:0 1px 3px #0002}.card h4{margin:0 0 4px;font-size:11px;color:#64748b}
+#list div{display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:1px solid #f1f5f9}
+.btn{margin:auto 12px 14px;padding:12px;border-radius:14px;background:#2563eb;color:#fff;text-align:center;font-weight:700}
+#bar{width:860px;max-width:95vw;height:6px;background:#334155;border-radius:3px;margin-top:14px}#bar div{height:100%;background:#facc15;width:0;border-radius:3px}
+</style></head><body>
+<h1>ExamGuard — 감독관 폰으로 시험장 무선기기 추적 (데모)</h1><div id='cap'></div>
+<div class='wrap'><canvas id='room' width='520' height='520'></canvas>
+<div class='phone'><div class='scr'><div class='notch'><div></div></div>
+<div class='hd'><b>ExamGuard</b><span class='pill' id='mode'>대기</span></div>
+<div id='ban'>준비 완료</div>
+<div class='card'><h4>교실 맵 · 신호 히트맵</h4><canvas id='mini' width='252' height='170'></canvas></div>
+<div class='card'><h4>패턴 분석 (선택 기기 RSSI 추이)</h4><canvas id='spark' width='252' height='60'></canvas><div id='pat' style='font-size:11px;margin-top:2px'>-</div></div>
+<div class='card'><h4>감지 기기</h4><div id='list'></div></div>
+<div class='btn' id='btn'>원점 설정 후 시작</div></div></div></div>
+<div id='bar'><div></div></div>
+<script>
+const C=5,R=4,T=60,rc=document.getElementById('room').getContext('2d'),mc=document.getElementById('mini').getContext('2d'),sc=document.getElementById('spark').getContext('2d');
+const dx=c=>90+c*85,dy=r=>120+r*95;
+const sus=[{c:2,r:1,k:'이어폰(Fast Pair)',tx:-44,col:'#ef4444'},{c:0,r:3,k:'스마트안경',tx:-47,col:'#f97316'}];
+const path=[[40,470],[40,70]];for(let i=0;i<C;i++){let x=dx(i)+42;path.push(...(i%2?[[x,470],[x,70]]:[[x,70],[x,470]]))}
+let seg=[],tot=0;for(let i=1;i<path.length;i++){let d=Math.hypot(path[i][0]-path[i-1][0],path[i][1]-path[i-1][1]);seg.push(d);tot+=d}
+function pos(f){let L=f*tot;for(let i=0;i<seg.length;i++){if(L<=seg[i]){let a=path[i],b=path[i+1],t=L/seg[i];return[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]}L-=seg[i]}return path[path.length-1]}
+let heat=[],hist=[],t0=performance.now(),lastS=0;
+const nm=s=>String.fromCharCode(65+s.r)+'-'+(s.c+1);
+function rssi(s,p){let d=Math.hypot(dx(s.c)-p[0],dy(s.r)-p[1])/85;return s.tx-20*Math.log10(Math.max(d,.3))+(Math.random()*6-3)}
+function cap(t){return t<6?'① 감독관이 교탁 앞 원점에서 [시작] — 폰 자이로·걸음 센서로 위치 추적 시작':t<20?'② 통로를 따라 걸으면 걸음/방향으로 좌표 계산 → 책상 5×4 배치 자동 매핑':t<46?'③ 걸으면서 BLE·Wi-Fi 신호 세기를 위치별로 기록 → 히트맵 생성':t<56?'④ 패턴 분석: 같은 자리에서 반복·지속 감지 + 거리에 따른 세기 변화 일치 → 의심 판정':'⑤ 결과: B-3, D-1 자리 확인 요청 — 감독관이 조용히 해당 자리 점검'}
+function frame(now){let t=((now-t0)/1000)%T;if(t<.05){heat=[];hist=[]}
+document.getElementById('cap').textContent=cap(t);document.querySelector('#bar div').style.width=(t/T*100)+'%';
+let f=t<6?0:Math.min((t-6)/40,1),p=pos(f),mapped=t<6?0:Math.min(C*R,Math.floor((t-6)/14*C*R)+1);
+rc.clearRect(0,0,520,520);rc.fillStyle='#334155';rc.fillRect(170,20,180,30);rc.fillStyle='#cbd5e1';rc.font='12px sans-serif';rc.fillText('교탁 · 칠판',228,40);
+for(let r=0;r<R;r++)for(let c=0;c<C;c++){rc.fillStyle='#475569';rc.fillRect(dx(c)-25,dy(r)-18,50,36);rc.fillStyle='#fde68a';rc.beginPath();rc.arc(dx(c),dy(r)+28,9,0,7);rc.fill();rc.fillStyle='#e2e8f0';rc.fillText(String.fromCharCode(65+r)+'-'+(c+1),dx(c)-12,dy(r)+4)}
+sus.forEach(s=>{if(t>6){rc.strokeStyle=s.col;rc.globalAlpha=.4+.4*Math.sin(now/200);for(let k=1;k<4;k++){rc.beginPath();rc.arc(dx(s.c),dy(s.r)+28,8+k*9+(now/60%9),0,7);rc.stroke()}rc.globalAlpha=1}});
+rc.fillStyle='#22d3ee';rc.beginPath();rc.arc(40,470,6,0,7);rc.fill();rc.fillText('원점',50,474);
+if(t>=6){rc.strokeStyle='#22d3ee55';rc.setLineDash([4,4]);rc.beginPath();rc.moveTo(40,470);for(let i=0;i<=60;i++){let q=pos(f*i/60);rc.lineTo(q[0],q[1])}rc.stroke();rc.setLineDash([])}
+rc.fillStyle='#0ea5e9';rc.beginPath();rc.arc(p[0],p[1],13,0,7);rc.fill();rc.fillStyle='#fff';rc.font='bold 11px sans-serif';rc.fillText('감독',p[0]-11,p[1]+4);rc.fillStyle='#111';rc.fillRect(p[0]+10,p[1]-18,9,15);
+if(t>=6&&t<46&&now-lastS>120){lastS=now;sus.forEach((s,i)=>{let v=rssi(s,p);heat.push({v,i});if(i==0)hist.push(v)});if(hist.length>120)hist.shift()}
+mc.clearRect(0,0,252,170);let sx=252/520,sy=170/520;
+for(let n=0;n<mapped;n++){let r=Math.floor(n/C),c=n%C;mc.fillStyle='#cbd5e1';mc.fillRect(dx(c)*sx-10,dy(r)*sy-7,20,14)}
+sus.forEach((s,i)=>{let pts=heat.filter(h=>h.i==i&&h.v>-62);if(!pts.length)return;let X=dx(s.c)*sx,Y=dy(s.r)*sy+8,g=mc.createRadialGradient(X,Y,1,X,Y,10+Math.min(pts.length,40)*.5);g.addColorStop(0,s.col+'ee');g.addColorStop(1,s.col+'00');mc.fillStyle=g;mc.beginPath();mc.arc(X,Y,32,0,7);mc.fill();if(pts.length>8){mc.fillStyle=s.col;mc.font='bold 10px sans-serif';mc.fillText('⚠ '+nm(s),X-14,Y-18)}});
+mc.fillStyle='#0ea5e9';mc.beginPath();mc.arc(p[0]*sx,p[1]*sy,4,0,7);mc.fill();
+sc.clearRect(0,0,252,60);sc.strokeStyle='#cbd5e1';sc.strokeRect(0,0,252,60);let th=60-35/55*60;sc.setLineDash([3,3]);sc.beginPath();sc.moveTo(0,th);sc.lineTo(252,th);sc.stroke();sc.setLineDash([]);sc.strokeStyle='#ef4444';sc.beginPath();hist.forEach((v,i)=>{let x=i/120*252,y=60-(v+95)/55*60;i?sc.lineTo(x,y):sc.moveTo(x,y)});sc.stroke();
+let pk=hist.filter(v=>v>-60).length;
+document.getElementById('pat').innerHTML=t<20?'데이터 수집 중…':t<46?'B-3 이어폰: 근접 피크 '+pk+'회, 접근/이탈 시 세기 변화 일치':'<b style="color:#dc2626">B-3 지속 감지(시험 내내 고정) · 접근 시 −45dBm 피크 · 위치 오차 ±0.8m → 의심 92%</b><br><b style="color:#ea580c">D-1 스마트안경 반복 감지 → 의심 78%</b>';
+let near=sus.filter(s=>Math.hypot(dx(s.c)-p[0],dy(s.r)-p[1])<110);
+const ban=document.getElementById('ban'),md=document.getElementById('mode');
+if(t<6){ban.style.background='#16a34a';ban.textContent='원점 설정 중';md.textContent='대기'}else if(t<20){ban.style.background='#2563eb';ban.textContent='교실 매핑 중 '+mapped+'/20석';md.textContent='매핑'}else if(t<46){md.textContent='스캔';if(near.length){ban.style.background=near[0].col;ban.textContent='근접 의심 기기 — '+near.map(nm).join(', ')+' 자리'}else{ban.style.background='#16a34a';ban.textContent='스캔 중 · 근접 의심 기기 없음'}}else{md.textContent='분석 완료';ban.style.background='#dc2626';ban.textContent='확인 필요: B-3 (92%), D-1 (78%)'}
+document.getElementById('btn').textContent=t<6?'원점 설정 후 시작':t<46?'스캔 중지':'리포트 저장';
+let L=t<6?[]:[...sus.map(s=>[s.k+' ('+nm(s)+')',Math.round(rssi(s,p))+' dBm',s.col]),['감독관 폰(기준제외)','-38 dBm','#94a3b8'],['복도 AP(기준제외)','-81 dBm','#94a3b8']];
+document.getElementById('list').innerHTML=L.map(x=>'<div><span style="color:'+x[2]+'">● '+x[0]+'</span><b>'+x[1]+'</b></div>').join('');
+requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+</script></body></html>

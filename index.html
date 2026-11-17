@@ -1,62 +1,139 @@
 <!DOCTYPE html><html lang='ko'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>ExamGuard 데모</title><style>
-body{margin:0;background:#0f172a;color:#e2e8f0;font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh}
-h1{font-size:20px;margin:16px 0 4px}#cap{font-size:15px;color:#facc15;height:22px;margin-bottom:10px}
+:root{--bg:#0f172a;--fg:#e2e8f0}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans CJK KR',sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh}
+h1{font-size:20px;margin:14px 0 4px}#cap{font-size:15px;color:#facc15;min-height:22px;margin-bottom:8px;text-align:center;padding:0 16px}
 .wrap{display:flex;gap:28px;flex-wrap:wrap;justify-content:center;align-items:center}
-#room{background:#1e293b;border-radius:14px}
-.phone{width:300px;height:620px;background:#000;border-radius:44px;padding:12px;box-shadow:0 0 0 3px #334155,0 20px 50px #0008}
+#room{background:#1e293b;border-radius:14px;max-width:95vw}
+.phone{width:300px;height:640px;background:#000;border-radius:44px;padding:12px;box-shadow:0 0 0 3px #334155,0 20px 50px #0008;flex-shrink:0}
 .scr{width:100%;height:100%;background:#f8fafc;border-radius:34px;overflow:hidden;color:#0f172a;display:flex;flex-direction:column}
-.notch{height:26px;display:flex;justify-content:center}.notch div{width:90px;height:20px;background:#000;border-radius:0 0 12px 12px}
-.hd{padding:4px 14px;display:flex;justify-content:space-between;align-items:center}.hd b{font-size:16px}.pill{font-size:11px;padding:3px 8px;border-radius:10px;background:#e2e8f0}
-#ban{margin:6px 12px;padding:10px;border-radius:12px;color:#fff;font-weight:700;font-size:14px;text-align:center;background:#16a34a;transition:.3s}
-.card{margin:4px 12px;background:#fff;border-radius:12px;padding:8px;box-shadow:0 1px 3px #0002}.card h4{margin:0 0 4px;font-size:11px;color:#64748b}
-#list div{display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:1px solid #f1f5f9}
-.btn{margin:auto 12px 14px;padding:12px;border-radius:14px;background:#2563eb;color:#fff;text-align:center;font-weight:700}
-#bar{width:860px;max-width:95vw;height:6px;background:#334155;border-radius:3px;margin-top:14px}#bar div{height:100%;background:#facc15;width:0;border-radius:3px}
+.notch{height:24px;display:flex;justify-content:center;flex-shrink:0}.notch div{width:90px;height:20px;background:#000;border-radius:0 0 12px 12px}
+.hd{padding:2px 14px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}.hd b{font-size:16px}.pill{font-size:11px;padding:3px 8px;border-radius:10px;background:#e2e8f0}
+#ban{margin:5px 12px 2px;padding:9px;border-radius:12px;color:#fff;font-weight:700;font-size:13.5px;text-align:center;background:#475569;flex-shrink:0}
+#toast{height:17px;font-size:11px;color:#4338ca;font-weight:700;text-align:center;flex-shrink:0}
+.card{margin:3px 12px;background:#fff;border-radius:12px;padding:7px 8px;box-shadow:0 1px 3px #0002;flex-shrink:0}.card h4{margin:0 0 3px;font-size:11px;color:#475569}
+#stats{font-size:10.5px;font-weight:700;text-align:center;color:#0f172a;height:15px;flex-shrink:0}
+#list div{display:flex;justify-content:space-between;font-size:10.5px;padding:2px 0;border-bottom:1px solid #f1f5f9}
+#gauge{display:none;text-align:center;height:290px;flex-direction:column;justify-content:center}
+#gnum{font-size:44px;font-weight:800}#gbar{height:12px;background:#e2e8f0;border-radius:6px;margin:6px 10px;overflow:hidden}#gbar div{height:100%;width:0}
+.btn{flex-shrink:0;margin:auto 12px 12px;padding:12px;border-radius:14px;background:#2563eb;color:#fff;text-align:center;font-weight:700}
+#bar{width:860px;max-width:95vw;height:6px;background:#334155;border-radius:3px;margin:12px 0}#bar div{height:100%;background:#facc15;width:0;border-radius:3px}
 </style></head><body>
-<h1>ExamGuard — 감독관 폰으로 시험장 무선기기 추적 (데모)</h1><div id='cap'></div>
+<h1>ExamGuard — 감독관 폰 한 대로 시험장 무선기기 탐지 (시연)</h1><div id='cap'></div>
 <div class='wrap'><canvas id='room' width='520' height='520'></canvas>
 <div class='phone'><div class='scr'><div class='notch'><div></div></div>
-<div class='hd'><b>ExamGuard</b><span class='pill' id='mode'>대기</span></div>
-<div id='ban'>준비 완료</div>
-<div class='card'><h4>교실 맵 · 신호 히트맵</h4><canvas id='mini' width='252' height='170'></canvas></div>
-<div class='card'><h4>패턴 분석 (선택 기기 RSSI 추이)</h4><canvas id='spark' width='252' height='60'></canvas><div id='pat' style='font-size:11px;margin-top:2px'>-</div></div>
-<div class='card'><h4>감지 기기</h4><div id='list'></div></div>
-<div class='btn' id='btn'>원점 설정 후 시작</div></div></div></div>
+<div class='hd'><b>ExamGuard</b><span class='pill' id='mode'>설정</span></div>
+<div id='ban'></div><div id='toast'></div>
+<div class='card'><h4 id='mtitle'>제1고사장 · 신호 히트맵 (교탁 ↑)</h4><canvas id='mini' width='252' height='170'></canvas>
+<div id='gauge'><div style='font-size:12px;color:#475569'>자기장 변화</div><div id='gnum'>0 μT</div><div id='gbar'><div></div></div><div style='font-size:10.5px;color:#475569'>기준 30μT 초과 시 해당 부위 확인</div><div style='font-size:11px;color:#334155;text-align:left;margin:14px 6px 0;line-height:1.6'>① 폰을 몸에서 떼고 기준 측정<br>② 귀·안경·주머니에 5cm까지 천천히<br>③ 30μT를 넘는 부위만 직접 확인<br><span style='color:#64748b'>금속 장신구·벨트도 반응하므로 확인용입니다</span></div></div></div>
+<div id='stats'></div>
+<div class='card' id='pcard'><h4>패턴 분석 · B-3 이어폰 RSSI (점선 −65dBm)</h4><canvas id='spark' width='252' height='48'></canvas><div id='pat' style='font-size:10.5px;margin-top:2px;min-height:28px'>-</div></div>
+<div class='card' id='lcard'><h4>감지 기기</h4><div id='list'></div></div>
+<div class='btn' id='btn'></div></div></div></div>
 <div id='bar'><div></div></div>
 <script>
-const C=5,R=4,T=60,rc=document.getElementById('room').getContext('2d'),mc=document.getElementById('mini').getContext('2d'),sc=document.getElementById('spark').getContext('2d');
-const dx=c=>90+c*85,dy=r=>120+r*95;
-const sus=[{c:2,r:1,k:'이어폰(Fast Pair)',tx:-44,col:'#ef4444'},{c:0,r:3,k:'스마트안경',tx:-47,col:'#f97316'}];
-const path=[[40,470],[40,70]];for(let i=0;i<C;i++){let x=dx(i)+42;path.push(...(i%2?[[x,470],[x,70]]:[[x,70],[x,470]]))}
-let seg=[],tot=0;for(let i=1;i<path.length;i++){let d=Math.hypot(path[i][0]-path[i-1][0],path[i][1]-path[i-1][1]);seg.push(d);tot+=d}
-function pos(f){let L=f*tot;for(let i=0;i<seg.length;i++){if(L<=seg[i]){let a=path[i],b=path[i+1],t=L/seg[i];return[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]}L-=seg[i]}return path[path.length-1]}
-let heat=[],hist=[],t0=performance.now(),lastS=0;
-const nm=s=>String.fromCharCode(65+s.r)+'-'+(s.c+1);
-function rssi(s,p){let d=Math.hypot(dx(s.c)-p[0],dy(s.r)-p[1])/85;return s.tx-20*Math.log10(Math.max(d,.3))+(Math.random()*6-3)}
-function cap(t){return t<6?'① 감독관이 교탁 앞 원점에서 [시작] — 폰 자이로·걸음 센서로 위치 추적 시작':t<20?'② 통로를 따라 걸으면 걸음/방향으로 좌표 계산 → 책상 5×4 배치 자동 매핑':t<46?'③ 걸으면서 BLE·Wi-Fi 신호 세기를 위치별로 기록 → 히트맵 생성':t<56?'④ 패턴 분석: 같은 자리에서 반복·지속 감지 + 거리에 따른 세기 변화 일치 → 의심 판정':'⑤ 결과: B-3, D-1 자리 확인 요청 — 감독관이 조용히 해당 자리 점검'}
-function frame(now){let t=((now-t0)/1000)%T;if(t<.05){heat=[];hist=[]}
-document.getElementById('cap').textContent=cap(t);document.querySelector('#bar div').style.width=(t/T*100)+'%';
-let f=t<6?0:Math.min((t-6)/40,1),p=pos(f),mapped=t<6?0:Math.min(C*R,Math.floor((t-6)/14*C*R)+1);
-rc.clearRect(0,0,520,520);rc.fillStyle='#334155';rc.fillRect(170,20,180,30);rc.fillStyle='#cbd5e1';rc.font='12px sans-serif';rc.fillText('교탁 · 칠판',228,40);
-for(let r=0;r<R;r++)for(let c=0;c<C;c++){rc.fillStyle='#475569';rc.fillRect(dx(c)-25,dy(r)-18,50,36);rc.fillStyle='#fde68a';rc.beginPath();rc.arc(dx(c),dy(r)+28,9,0,7);rc.fill();rc.fillStyle='#e2e8f0';rc.fillText(String.fromCharCode(65+r)+'-'+(c+1),dx(c)-12,dy(r)+4)}
-sus.forEach(s=>{if(t>6){rc.strokeStyle=s.col;rc.globalAlpha=.4+.4*Math.sin(now/200);for(let k=1;k<4;k++){rc.beginPath();rc.arc(dx(s.c),dy(s.r)+28,8+k*9+(now/60%9),0,7);rc.stroke()}rc.globalAlpha=1}});
-rc.fillStyle='#22d3ee';rc.beginPath();rc.arc(40,470,6,0,7);rc.fill();rc.fillText('원점',50,474);
-if(t>=6){rc.strokeStyle='#22d3ee55';rc.setLineDash([4,4]);rc.beginPath();rc.moveTo(40,470);for(let i=0;i<=60;i++){let q=pos(f*i/60);rc.lineTo(q[0],q[1])}rc.stroke();rc.setLineDash([])}
-rc.fillStyle='#0ea5e9';rc.beginPath();rc.arc(p[0],p[1],13,0,7);rc.fill();rc.fillStyle='#fff';rc.font='bold 11px sans-serif';rc.fillText('감독',p[0]-11,p[1]+4);rc.fillStyle='#111';rc.fillRect(p[0]+10,p[1]-18,9,15);
-if(t>=6&&t<46&&now-lastS>120){lastS=now;sus.forEach((s,i)=>{let v=rssi(s,p);heat.push({v,i});if(i==0)hist.push(v)});if(hist.length>120)hist.shift()}
-mc.clearRect(0,0,252,170);let sx=252/520,sy=170/520;
-for(let n=0;n<mapped;n++){let r=Math.floor(n/C),c=n%C;mc.fillStyle='#cbd5e1';mc.fillRect(dx(c)*sx-10,dy(r)*sy-7,20,14)}
-sus.forEach((s,i)=>{let pts=heat.filter(h=>h.i==i&&h.v>-62);if(!pts.length)return;let X=dx(s.c)*sx,Y=dy(s.r)*sy+8,g=mc.createRadialGradient(X,Y,1,X,Y,10+Math.min(pts.length,40)*.5);g.addColorStop(0,s.col+'ee');g.addColorStop(1,s.col+'00');mc.fillStyle=g;mc.beginPath();mc.arc(X,Y,32,0,7);mc.fill();if(pts.length>8){mc.fillStyle=s.col;mc.font='bold 10px sans-serif';mc.fillText('⚠ '+nm(s),X-14,Y-18)}});
-mc.fillStyle='#0ea5e9';mc.beginPath();mc.arc(p[0]*sx,p[1]*sy,4,0,7);mc.fill();
-sc.clearRect(0,0,252,60);sc.strokeStyle='#cbd5e1';sc.strokeRect(0,0,252,60);let th=60-35/55*60;sc.setLineDash([3,3]);sc.beginPath();sc.moveTo(0,th);sc.lineTo(252,th);sc.stroke();sc.setLineDash([]);sc.strokeStyle='#ef4444';sc.beginPath();hist.forEach((v,i)=>{let x=i/120*252,y=60-(v+95)/55*60;i?sc.lineTo(x,y):sc.moveTo(x,y)});sc.stroke();
-let pk=hist.filter(v=>v>-60).length;
-document.getElementById('pat').innerHTML=t<20?'데이터 수집 중…':t<46?'B-3 이어폰: 근접 피크 '+pk+'회, 접근/이탈 시 세기 변화 일치':'<b style="color:#dc2626">B-3 지속 감지(시험 내내 고정) · 접근 시 −45dBm 피크 · 위치 오차 ±0.8m → 의심 92%</b><br><b style="color:#ea580c">D-1 스마트안경 반복 감지 → 의심 78%</b>';
-let near=sus.filter(s=>Math.hypot(dx(s.c)-p[0],dy(s.r)-p[1])<110);
-const ban=document.getElementById('ban'),md=document.getElementById('mode');
-if(t<6){ban.style.background='#16a34a';ban.textContent='원점 설정 중';md.textContent='대기'}else if(t<20){ban.style.background='#2563eb';ban.textContent='교실 매핑 중 '+mapped+'/20석';md.textContent='매핑'}else if(t<46){md.textContent='스캔';if(near.length){ban.style.background=near[0].col;ban.textContent='근접 의심 기기 — '+near.map(nm).join(', ')+' 자리'}else{ban.style.background='#16a34a';ban.textContent='스캔 중 · 근접 의심 기기 없음'}}else{md.textContent='분석 완료';ban.style.background='#dc2626';ban.textContent='확인 필요: B-3 (92%), D-1 (78%)'}
-document.getElementById('btn').textContent=t<6?'원점 설정 후 시작':t<46?'스캔 중지':'리포트 저장';
-let L=t<6?[]:[...sus.map(s=>[s.k+' ('+nm(s)+')',Math.round(rssi(s,p))+' dBm',s.col]),['감독관 폰(기준제외)','-38 dBm','#94a3b8'],['복도 AP(기준제외)','-81 dBm','#94a3b8']];
-document.getElementById('list').innerHTML=L.map(x=>'<div><span style="color:'+x[2]+'">● '+x[0]+'</span><b>'+x[1]+'</b></div>').join('');
-requestAnimationFrame(frame)}
+// ---- 가상 교실 (실제 앱 로직과 같은 규칙으로 동작하는 시연용 시뮬레이션) ----
+const T=80,C=5,R=4,$=id=>document.getElementById(id);
+const rc=$('room').getContext('2d'),mc=$('mini').getContext('2d'),sc=$('spark').getContext('2d');
+const dx=c=>90+c*85,dy=r=>120+r*95,PXM=85; // 85px = 1m
+const seat=(r,c)=>String.fromCharCode(65+r)+'-'+(c+1);
+const FRONT=70,BACK=470,AX=[40,132,217,302,387,472];
+const devs=[{k:'이어폰(FastPair)',r:1,c:2,tx:-62,col:'#ef4444',score:88,h:[],peak:-99,strong:0},
+            {k:'휴대폰(Apple)',r:3,c:0,tx:-56,col:'#f97316',score:72,h:[],peak:-99,strong:0}];
+const dpos=d=>[dx(d.c),dy(d.r)+28];
+const P=[[40,BACK]];for(let i=1;i<AX.length;i++){const y=P[P.length-1][1];P.push([AX[i],y]);P.push([AX[i],y==BACK?FRONT:BACK])}
+let seg=[],tot=0,cum=[0];for(let i=1;i<P.length;i++){const d=Math.hypot(P[i][0]-P[i-1][0],P[i][1]-P[i-1][1]);seg.push(d);tot+=d;cum.push(tot)}
+function along(L){for(let i=0;i<seg.length;i++){if(L<=seg[i]){const a=P[i],b=P[i+1],u=L/seg[i];return[a[0]+(b[0]-a[0])*u,a[1]+(b[1]-a[1])*u]}L-=seg[i]}return P[P.length-1]}
+function sup(t){if(t<12)return[40,FRONT];if(t<20)return[40,FRONT+(BACK-FRONT)*(t-12)/8];if(t<56)return along((t-20)/36*tot);return P[P.length-1]}
+const pathLen=t=>t<20?0:Math.min(tot,(t-20)/36*tot);
+let seed=7;const rnd=()=>((seed=(seed*16807)%2147483647)/2147483647);
+const gauss=()=>{let u=rnd()||1e-9,v=rnd();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
+function rssi(d,p){const m=Math.max(.3,Math.hypot(dpos(d)[0]-p[0],dpos(d)[1]-p[1])/PXM);return Math.round(d.tx-25*Math.log10(m)+gauss()*3)}
+const toasts=[[2.2,4.2,'A-5 책상 탭 → 빈자리로 수동 매핑'],[4.4,6.6,'D-5 책상 탭 → 빈자리로 수동 매핑'],[9,12,'상시 기기 2대 등록 (감독관 폰, 복도 공유기)'],
+ [20,23,'보폭 0.68m로 자동 보정 (8걸음)'],[25.5,28.5,'옆 교실 폰 최대 −72dBm → 원거리 제외'],[33,36.5,'B-3 이어폰 BLE 주소 변경 → 같은 기기로 병합']];
+function cap(t){return t<8?'① 고사장 이름·배치(5×4) 입력 → 빈자리는 맵의 책상을 탭해 수동 매핑':t<12?'② 기준 등록 15초: 감독관 폰·복도 공유기 같은 상시 기기는 분석에서 제외':t<20?'③ 보폭 보정: 원점에서 첫 통로 끝까지 걸으면 걸음 수로 보폭 자동 계산':t<56?'④ 순찰: 통로 스냅 + U턴 자동 재보정 · 바뀐 BLE 주소 병합 · 먼 기기(−65dBm 미만) 제외':t<68?'⑤ 패턴 분석: 근접 피크·세기 변화폭·반복 피크 위치·지속성 → 자리별 점수':'⑥ 입실 점검: 전원이 꺼진 기기도 자기장 센서로 근접 확인'}
+let lastT=-1,lastS=0;
+function reset(){devs.forEach(d=>{d.h=[];d.peak=-99;d.strong=0});lastS=0;seed=7}
+function frame(now){
+ let t=(now/1000)%T;if(t<lastT)reset();lastT=t;
+ $('cap').textContent=cap(t);document.querySelector('#bar div').style.width=(t/T*100)+'%';
+ const entry=t>=68,p=sup(t),emp=new Set();if(t>=2.5)emp.add('0-4');if(t>=4.6)emp.add('3-4');
+ // 신호 샘플링 (보정·순찰 중)
+ if(t>=12&&t<56&&now-lastS>=120){lastS=now;devs.forEach(d=>{const v=rssi(d,p);d.h.push(v);if(d.h.length>140)d.h.shift();if(v>d.peak)d.peak=v;if(v>-62)d.strong++})}
+ // ---------- 왼쪽: 교실 ----------
+ rc.clearRect(0,0,520,520);
+ if(!entry){
+  rc.fillStyle='#334155';rc.fillRect(170,14,180,28);rc.fillStyle='#cbd5e1';rc.font='12px sans-serif';rc.fillText('교탁 · 칠판',228,33);
+  rc.fillStyle='#94a3b8';rc.font='bold 13px sans-serif';rc.fillText('제1고사장',14,26);
+  rc.fillStyle='#64748b';rc.font='11px sans-serif';rc.fillText('복도 공유기'+(t>=9?' (기준제외)':''),400,30);rc.beginPath();rc.arc(392,26,4,0,7);rc.fill();
+  rc.fillText('← 옆 교실 폰'+(t>=25.5?' (원거리 제외)':''),6,508);
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){const off=emp.has(r+'-'+c);
+   if(off){rc.setLineDash([4,3]);rc.strokeStyle='#64748b';rc.strokeRect(dx(c)-25,dy(r)-18,50,36);rc.setLineDash([]);rc.fillStyle='#64748b';rc.font='11px sans-serif';rc.fillText('빈자리',dx(c)-16,dy(r)+4)}
+   else{rc.fillStyle='#475569';rc.fillRect(dx(c)-25,dy(r)-18,50,36);rc.fillStyle='#fde68a';rc.beginPath();rc.arc(dx(c),dy(r)+28,9,0,7);rc.fill();rc.fillStyle='#e2e8f0';rc.font='12px sans-serif';rc.fillText(seat(r,c),dx(c)-12,dy(r)+4)}}
+  [[2.5,'0-4'],[4.6,'3-4']].forEach(([ts,k])=>{if(t>ts-.4&&t<ts+.9){const [r,c]=k.split('-').map(Number),u=(t-ts+.4)/1.3;rc.strokeStyle='#22d3ee';rc.lineWidth=2;rc.globalAlpha=1-u;rc.beginPath();rc.arc(dx(c),dy(r),10+u*30,0,7);rc.stroke();rc.globalAlpha=1;rc.lineWidth=1}});
+  if(t>=12)devs.forEach(d=>{const [x,y]=dpos(d);rc.strokeStyle=d.col;rc.globalAlpha=.35+.35*Math.sin(now/200);for(let k=1;k<4;k++){rc.beginPath();rc.arc(x,y,8+k*9+(now/60%9),0,7);rc.stroke()}rc.globalAlpha=1});
+  rc.fillStyle='#22d3ee';rc.beginPath();rc.arc(40,FRONT,6,0,7);rc.fill();rc.font='bold 11px sans-serif';rc.fillText('원점',28,FRONT+24);
+  // 걸어온 경로
+  if(t>=12){rc.strokeStyle='#22d3ee88';rc.setLineDash([4,4]);rc.beginPath();rc.moveTo(40,FRONT);rc.lineTo(40,t<20?p[1]:BACK);
+   if(t>=20){const L=pathLen(t);for(let i=1;i<P.length&&cum[i]<=L;i++)rc.lineTo(P[i][0],P[i][1]);rc.lineTo(p[0],p[1])}rc.stroke();rc.setLineDash([])}
+  // U턴 자동 재보정 표시 (통로 끝에서 돌아 다음 통로로 들어설 때)
+  let uturn=false;if(t>=20&&t<56){const L=pathLen(t);for(let i=1;i<P.length;i+=2){if(L-cum[i]>=0&&L-cum[i]<55)uturn=true}}
+  if(uturn){rc.strokeStyle='#22d3ee';rc.lineWidth=2;rc.beginPath();rc.arc(p[0],p[1],22,0,7);rc.stroke();rc.lineWidth=1;rc.fillStyle='#22d3ee';rc.font='bold 12px sans-serif';rc.fillText('U턴 → 재보정',Math.min(p[0]+18,420),p[1]<100?p[1]+42:p[1]-28)}
+  frame.uturn=uturn;
+  rc.fillStyle='#0ea5e9';rc.beginPath();rc.arc(p[0],p[1],13,0,7);rc.fill();rc.fillStyle='#fff';rc.font='bold 11px sans-serif';rc.fillText('감독',p[0]-11,p[1]+4);rc.fillStyle='#111';rc.fillRect(p[0]+10,p[1]-18,9,15);
+  if(t>=56)devs.forEach(d=>{const [x,y]=dpos(d),tx=seat(d.r,d.c)+' '+d.score+'점';rc.font='bold 13px sans-serif';const w=rc.measureText(tx).width+12;rc.fillStyle=d.col;rc.beginPath();rc.roundRect(x-w/2,y+14,w,20,6);rc.fill();rc.fillStyle='#fff';rc.fillText(tx,x-w/2+6,y+29)});
+ }else{
+  // 입실 점검: 사람 실루엣과 폰 이동
+  rc.fillStyle='#94a3b8';rc.font='bold 13px sans-serif';rc.fillText('입실 점검 (시험 시작 전, 출입구)',14,26);
+  rc.fillStyle='#475569';rc.beginPath();rc.arc(260,140,48,0,7);rc.fill();rc.beginPath();rc.roundRect(185,200,150,210,30);rc.fill();
+  rc.fillRect(150,215,36,150);rc.fillRect(334,215,36,150);rc.fillRect(200,405,50,100);rc.fillRect(270,405,50,100);
+  rc.fillStyle='#1e293b';rc.fillRect(280,330,40,50);rc.fillStyle='#64748b';rc.font='11px sans-serif';rc.fillText('주머니',283,395);
+  const K=[[68,[440,300]],[70,[318,142]],[72,[318,142]],[73.5,[260,270]],[75,[300,352]],[78,[300,352]],[80,[300,352]]];
+  let q=K[0][1];for(let i=1;i<K.length;i++){if(t<=K[i][0]){const u=(t-K[i-1][0])/(K[i][0]-K[i-1][0]);q=[K[i-1][1][0]+(K[i][1][0]-K[i-1][1][0])*u,K[i-1][1][1]+(K[i][1][1]-K[i-1][1][1])*u];break}}
+  rc.lineWidth=2;
+  if(t>=70.6){rc.strokeStyle='#ef4444';rc.beginPath();rc.arc(318,142,20,0,7);rc.stroke();rc.fillStyle='#ef4444';rc.font='bold 12px sans-serif';rc.fillText('귓속 이어폰 자석 +46μT',340,112)}
+  if(t>=75.4){rc.strokeStyle='#ef4444';rc.beginPath();rc.arc(300,352,30,0,7);rc.stroke();rc.fillStyle='#ef4444';rc.font='bold 12px sans-serif';rc.fillText('전원 꺼진 폰 +124μT',345,420)}
+  rc.lineWidth=1;rc.fillStyle='#0ea5e9';rc.beginPath();rc.roundRect(q[0]-12,q[1]-22,24,44,5);rc.fill();rc.fillStyle='#fff';rc.fillRect(q[0]-8,q[1]-17,16,30);
+  frame.q=q;
+ }
+ // ---------- 오른쪽: 폰 화면 ----------
+ const s=Math.min(252/480,170/470),ox=(252-480*s)/2,M=(x,y)=>[ox+(x-20)*s,(y-35)*s];
+ $('gauge').style.display=entry?'flex':'none';$('mini').style.display=entry?'none':'block';
+ $('pcard').style.display=entry?'none':'block';$('lcard').style.display=entry?'none':'block';$('stats').style.display=entry?'none':'block';
+ $('mtitle').textContent=entry?'입실 점검 · 자기장 센서':'제1고사장 · '+(20-emp.size)+'석 · 신호 히트맵 (교탁 ↑)';
+ if(!entry){
+  mc.clearRect(0,0,252,170);
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){const [x,y]=M(dx(c),dy(r));if(emp.has(r+'-'+c)){mc.setLineDash([2,2]);mc.strokeStyle='#94a3b8';mc.strokeRect(x-12,y-8,24,16);mc.setLineDash([]);mc.fillStyle='#94a3b8';mc.font='8px sans-serif';mc.fillText('빈',x-4,y+3)}else{mc.fillStyle='#cbd5e1';mc.fillRect(x-12,y-8,24,16);mc.fillStyle='#64748b';mc.font='8px sans-serif';mc.fillText(seat(r,c),x-7,y+3)}}
+  devs.forEach(d=>{if(d.strong<3)return;const [x,y]=M(...dpos(d)),rad=8+Math.min(d.strong,40)*.45,g=mc.createRadialGradient(x,y,1,x,y,rad);g.addColorStop(0,d.col+'ee');g.addColorStop(1,d.col+'00');mc.fillStyle=g;mc.beginPath();mc.arc(x,y,rad,0,7);mc.fill();
+   if(t>=56){const tx=seat(d.r,d.c)+' '+d.score+'점';mc.font='bold 10px sans-serif';const w=mc.measureText(tx).width+8;mc.fillStyle=d.col;mc.beginPath();mc.roundRect(x-w/2,y+5,w,14,4);mc.fill();mc.fillStyle='#fff';mc.fillText(tx,x-w/2+4,y+15)}});
+  if(t>=12){mc.strokeStyle='#06b6d4';mc.lineWidth=1.2;mc.beginPath();mc.moveTo(...M(40,FRONT));mc.lineTo(...M(40,t<20?p[1]:BACK));if(t>=20){const L=pathLen(t);for(let i=1;i<P.length&&cum[i]<=L;i++)mc.lineTo(...M(...P[i]));mc.lineTo(...M(...p))}mc.stroke();mc.lineWidth=1}
+  mc.fillStyle='#2563eb';mc.beginPath();mc.arc(...M(...p),4,0,7);mc.fill();
+  // RSSI 추이
+  sc.clearRect(0,0,252,48);sc.strokeStyle='#cbd5e1';sc.strokeRect(0,0,252,48);const Y=v=>48-(v+95)/55*48;sc.setLineDash([3,3]);sc.beginPath();sc.moveTo(0,Y(-65));sc.lineTo(252,Y(-65));sc.stroke();sc.setLineDash([]);
+  sc.strokeStyle='#ef4444';sc.beginPath();devs[0].h.forEach((v,i)=>{const x=i/140*252;i?sc.lineTo(x,Y(v)):sc.moveTo(x,Y(v))});sc.stroke();
+  const e=devs[0],pk=e.h.length?Math.max(...e.h):-99,lo=e.h.length?[...e.h].sort((a,b)=>a-b)[Math.floor(e.h.length*.2)]:-99;
+  $('pat').innerHTML=t<12?'순찰을 시작하면 수집됩니다':t<56?'최대 '+pk+'dBm · 변화폭 '+(pk-lo)+'dB · 근접 통과 때마다 피크 → 한 자리에 고정된 기기 패턴':'<b style="color:#dc2626">B-3 이어폰: 최대 −47dBm · 변화폭 31dB · 반복 피크 3회 모두 같은 자리 → 88점</b><br><b style="color:#ea580c">D-1 휴대폰: 최대 −46dBm · 변화폭 29dB → 72점</b>';
+  // 수집 현황
+  const near=devs.filter(d=>d.peak>=-65).length,coll=t<12?0:t<22?3:t<25.5?5:6,far=t<22?0:t<25.5?1:2;
+  $('stats').textContent=t<12?'':'수집 '+coll+'대 · 기준제외 2 · 원거리제외 '+far+' · 근거리분석 '+near+' · 의심 '+(t>=56?2:0);
+  const L=[];if(t>=12){devs.forEach(d=>{if(d.peak>-99)L.push([d.k+' ('+seat(d.r,d.c)+')'+(d===devs[0]&&t>=33?' · 주소 2개 병합':''),(d.h.length?d.h[d.h.length-1]:'-')+' dBm',d.col])});if(t>=25.5)L.push(['옆 교실 폰 · 원거리 제외','최대 −72','#94a3b8'])}
+  $('list').innerHTML=L.slice(0,3).map(x=>'<div><span style="color:'+x[2]+'">● '+x[0]+'</span><b>'+x[1]+'</b></div>').join('')||'<div style="color:#94a3b8">-</div>';
+ }else{
+  const q=frame.q,ear=Math.hypot(q[0]-318,q[1]-142),pkt=Math.hypot(q[0]-300,q[1]-352);
+  const mag=Math.max(0,Math.round(46*Math.exp(-ear/14)+124*Math.exp(-pkt/16)+3+gauss()*1.5)),bad=mag>30;
+  $('gnum').textContent='+'+mag+' μT';$('gnum').style.color=bad?'#dc2626':'#16a34a';
+  const gb=document.querySelector('#gbar div');gb.style.width=Math.min(100,mag)+'%';gb.style.background=bad?'#dc2626':'#16a34a';
+  frame.mag=mag;
+ }
+ // 배너·토스트·버튼
+ const md=$('mode');let bc='#475569',bt='',bn='';
+ if(t<8){bt='배치도 입력 · 빈자리는 책상을 탭';md.textContent='설정';bn='보폭 보정 후 시작'}
+ else if(t<12){bc='#4f46e5';bt='기준 등록 중… 상시 기기 제외';md.textContent='기준 등록';bn='기준 등록 중…'}
+ else if(t<20){bc='#4f46e5';bt='보폭 보정 중 · '+Math.floor(t-12)+'걸음 — 맨 뒤 도착 시 [도착]';md.textContent='보정';bn='도착 (맨 뒤)'}
+ else if(t<56){md.textContent='순찰';bn='중지';const nr=devs.filter(d=>Math.hypot(dpos(d)[0]-p[0],dpos(d)[1]-p[1])<100);if(nr.length){bc=nr[0].col;bt='근처 의심 신호 — '+nr.map(d=>seat(d.r,d.c)).join(', ')+' 자리'}else{bc='#16a34a';bt='순찰 중 · 이상 없음'}}
+ else if(t<68){bc='#dc2626';bt='확인 필요: B-3 88점, D-1 72점';md.textContent='분석 완료';bn='리포트 저장'}
+ else{md.textContent='입실 점검';bn='점검 종료';if(frame.mag>30){bc='#dc2626';bt='자기장 이상 +'+frame.mag+'μT — 이 부위 확인'}else{bc='#16a34a';bt='정상 — 귀·주머니·안경에 5cm까지 대 보세요'}}
+ $('ban').style.background=bc;$('ban').textContent=bt;$('btn').textContent=bn;
+ let ts='';for(const [a,b,x] of toasts)if(t>=a&&t<b)ts=x;if(!entry&&frame.uturn&&!ts)ts='통로 끝 U턴 감지 → 위치 자동 재보정';$('toast').textContent=ts;
+ requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 </script></body></html>
